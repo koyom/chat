@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>Chatアプリ</title>
+    <style>
+        body {
+            background-color: #00aaff;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        div {
+            background-color: #ffffff;
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="text"],
+        textarea {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #0077cc;
+            color: #ffffff;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #005faa;
+        }
+
+        #output {
+            margin-top: 20px;
+        }
+
+        p {
+            background-color: #e0e0e0;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        span {
+            margin: 0 5px;
+            cursor: pointer;
+            color: #0077cc;
+        }
+
+        span:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<!-- コンテンツ表示画面 -->
+<div>
+    <div>
+        名前: <input type="text" id="uname">
+    </div>
+    <div>
+        <textarea name="" id="text" cols="30" rows="10"></textarea>
+        <button id="send">送信</button>
+    </div>
+    <div id="output"></div>
+</div>
+<!--/ コンテンツ表示画面 -->
+
+<!-- JQuery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<!-- FirebaseのSDKとDatabase関連のSDKもインポート -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, push, set, update, remove, onChildAdded, onChildRemoved } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCs3i_BBI0kBTaQachDiXQDBFVePPDXf1k",
+        authDomain: "chat-bd2ff.firebaseapp.com",
+        projectId: "chat-bd2ff",
+        storageBucket: "chat-bd2ff.appspot.com",
+        messagingSenderId: "721589783697",
+        appId: "1:721589783697:web:eb95ca7e3ab5bad0780330",
+        measurementId: "G-V97Y9XM9T5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+
+    const db = getDatabase(app);
+    const dbRef = ref(db, "chat");
+
+    $("#send").on("click", function () {
+        const msg = {
+            uname: $("#uname").val(),
+            text: $("#text").val()
+        }
+        const newPostRef = push(dbRef);
+        set(newPostRef, msg);
+    });
+
+    onChildAdded(dbRef, function (data) {
+        const msg = data.val();
+        const key = data.key;
+        let h = `<p id="${key}">`;
+        h += msg.uname;
+        h += '<br>';
+        h += '<span contentEditable="true" id="'+key+'_update">' + msg.text + '</span>';
+        h += '<span class="remove" data-key="' + key + '">削除</span>'
+        h += '<span class="update" data-key="' + key + '">更新</span>'
+        h += '</p>';
+        $("#output").append(h);
+    });
+
+    $("#output").on("click", ".remove", function(){
+        const key = $(this).attr("data-key");
+        const removeItem = ref(db, "chat/" + key);
+        remove(removeItem);
+    });
+
+    $("#output").on("click", ".update", function(){
+        const key = $(this).attr("data-key");
+        update(ref(db, "chat/" + key), {
+            text: $("#" + key + '_update').html()
+        });
+    });
+
+    onChildRemoved(dbRef, function (data) {
+        $("#" + data.key).remove();
+    });
+</script>
+<!--/ FirebaseのSDKとDatabase関連のSDKもインポート -->
+
+</body>
+</html>
